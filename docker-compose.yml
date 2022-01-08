@@ -1,0 +1,35 @@
+version: '3'
+services:
+  selenoid:
+    image: "aerokube/selenoid:latest-release"
+    network_mode: bridge
+    ports:
+      - "4444:4444"
+    volumes:
+      - "/Users/tsharma/dev/selenoid-wdio-test-runner/:/etc/selenoid/" # assumed current dir contains browsers.json
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/Users/tsharma/dev/selenoid-wdio-test-runner/video/:/opt/selenoid/video/"
+      - "/Users/tsharma/dev/selenoid-wdio-test-runner/logs:/opt/selenoid/logs/"
+    environment:
+     - OVERRIDE_VIDEO_OUTPUT_DIR=/Users/tsharma/dev/selenoid-wdio-test-runner/video
+     - limit=10
+    command: ["-conf", "/etc/selenoid/browsers.json", "-video-output-dir", "/opt/selenoid/video", "-log-output-dir", "/opt/selenoid/logs", "-video-recorder-image", "selenoid/video-recorder:latest-release"]
+  selenoid-ui:
+    depends_on:
+      - selenoid
+    image: "aerokube/selenoid-ui"
+    network_mode: bridge
+    links:
+      - selenoid
+    ports:
+      - "8090:8080"
+    command: ["--selenoid-uri", "http://selenoid:4444"]
+  
+  autoheal:
+    restart: always
+    image: willfarrell/autoheal
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=all
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    
